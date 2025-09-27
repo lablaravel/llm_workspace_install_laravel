@@ -1,0 +1,49 @@
+grumphp:
+  process_timeout: 600
+  stop_on_failure: true
+  ignore_unstaged_changes: true
+
+  tasks:
+    # Validação rápida do composer.json/composer.lock
+    composer:
+      no_check_lock: false
+      strict: true
+
+    # Lint básico de PHP (opcional).
+    # Remova esta task se você NÃO tiver PHP instalado localmente e depender 100% do Sail.
+    phplint:
+      triggered_by: [php, phtml]
+
+    # Evita subir chamadas de debug acidentalmente
+    git_blacklist:
+      keywords:
+        - 'dd('
+        - 'dump('
+        - 'var_dump('
+        - 'ray('
+      triggered_by: [php, phtml]
+
+    # Rodar Pint e PHPStan dentro do Sail, apenas quando houver arquivos PHP alterados
+    shell:
+      # Cada script é executado de forma sequencial.
+      # Usamos bash -lc para garantir parsing consistente dos comandos.
+      scripts:
+        - >
+          bash -lc 'CHANGED="$(git diff --name-only --cached --diff-filter=ACMR | grep -E "\.php$" || true)";
+          if [ -z "$CHANGED" ]; then
+            echo "No PHP changes. Skipping Pint.";
+            exit 0;
+          fi;
+          ./vendor/bin/sail pint --test -- $CHANGED'
+        - >
+          bash -lc 'CHANGED="$(git diff --name-only --cached --diff-filter=ACMR | grep -E "\.php$" || true)";
+          if [ -z "$CHANGED" ]; then
+            echo "No PHP changes. Skipping PHPStan.";
+            exit 0;
+          fi;
+          ./vendor/bin/sail php -d memory_limit=-1 ./vendor/bin/phpstan analyse --no-progress --ansi -- $CHANGED'
+
+  # Exemplo de suíte opcional para pre-commit (caso queira referenciar explicitamente)
+  # testsuites:
+  #   pre-commit:
+  #     tasks: [composer, phplint, git_blacklist, shell]

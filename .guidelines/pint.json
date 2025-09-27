@@ -1,0 +1,19 @@
+{
+    "preset": "laravel",
+    "php_version": "8.3",
+    "exclude": [
+      "bootstrap/cache",
+      "storage",
+      "vendor"
+    ],
+    "notName": [
+      "*.blade.php",
+      "_ide_helper.php",
+      "_ide_helper_models.php"
+    ],
+    "notPath": [
+      "node_modules",
+      "public/build",
+      "public/vendor"
+    ]
+  }
