@@ -24,9 +24,11 @@ Antes de escrever código, crie ou atualize um arquivo em `docs/specs/{feature-n
 1.  **Arquitetura Proposta (Checklist):**
     - [ ] **Rota:** Qual URL e Verbo? (Ex: `POST /api/v1/appointments`)
     - [ ] **Validação:** Definir campos do `FormRequest`.
+    - [ ] **Data Contract:** Definir DTO (`Data` class) para transferir dados do Controller ao Service (se > 3 campos).
     - [ ] **Controller:** Deve ser "Thin" (apenas orquestração). Retorna `Inertia::render` ou `ApiResponse`.
     - [ ] **Service:** Definir método no Service (Lógica "Fat"). NUNCA criar Repository.
     - [ ] **Banco de Dados:** Precisa de Migration? Mudanças no Model?
+    - [ ] **Enums:** Precisa de Enums para status/tipos?
     - [ ] **Tratamento de Erro:** Qual `BusinessException` será lançada?
 
 2.  **Validação de Regras:**
@@ -41,9 +43,11 @@ Após aprovação do plano, gere o código seguindo estritamente a Skill `larave
 
 1.  **Passo a Passo:**
     - Crie/Ajuste Migrations e Models primeiro.
+    - Crie Enums para status/tipos se necessário.
     - Crie o `FormRequest` com mensagens traduzidas.
-    - Implemente a lógica no `Service` (com Transações e Logs).
-    - Implemente o `Controller` injetando o Service.
+    - **Crie o DTO (Data class via laravel-data) para encapsular os dados de entrada (se > 3 campos).**
+    - Implemente a lógica no `Service` (tipando o argumento com o DTO, com Transações e Logs).
+    - Implemente o `Controller` convertendo o Request em DTO via `::from()` e injetando o Service.
     - Ajuste rotas e frontend (se aplicável).
 
 2.  **Padrões de Código (Strict):**
