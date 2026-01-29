@@ -1,0 +1,23 @@
+---
+description: Regra para atualização do log de projeto
+globs: 
+alwaysApply: true
+---
+
+# Log de Projeto
+
+Sempre que uma alteração significativa for feita no projeto, atualize o arquivo `docs/log-project.md` com um resumo das mudanças.
+
+## Formato do Log
+
+```markdown
+## [DATA] - Descrição breve
+
+### Alterações
+- Item 1
+- Item 2
+
+### Arquivos afetados
+- `path/to/file1`
+- `path/to/file2`
+```

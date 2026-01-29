@@ -1,0 +1,59 @@
+---
+description: Protocolo de Trabalho RPI (Research, Plan, Implement) para Laravel
+globs: *
+alwaysApply: true
+---
+
+# Workflow RPI: Discovery → Specification → Code
+
+Sempre siga estas três etapas antes de gerar código final. Este fluxo garante adesão às regras definidas na Skill `laravel-inertia-react-architecture`.
+
+### 1. R - Research (Descoberta & Contexto)
+Antes de escrever qualquer plano:
+- **Analise a estrutura MVC atual:**
+  - Verifique `app/Models` para entender o schema.
+  - Verifique `app/Services` para lógica de negócio existente (lembre-se: "Fat Services").
+  - Verifique `app/Http/Controllers` e `routes/` para endpoints existentes.
+- **Consultas Técnicas (Obrigatório):**
+  - Use o `Laravel Boost MCP` ou `Context7` se tiver dúvidas sobre implementações específicas de pacotes ou features do Laravel 11+.
+- **Saída:** Um resumo do contexto atual e quais arquivos serão impactados.
+
+### 2. P - Plan (Planejamento/Spec)
+Antes de escrever código, crie ou atualize um arquivo em `docs/specs/{feature-name}.md`:
+
+1.  **Arquitetura Proposta (Checklist):**
+    - [ ] **Rota:** Qual URL e Verbo? (Ex: `POST /api/v1/appointments`)
+    - [ ] **Validação:** Definir campos do `FormRequest`.
+    - [ ] **Controller:** Deve ser "Thin" (apenas orquestração). Retorna `Inertia::render` ou `ApiResponse`.
+    - [ ] **Service:** Definir método no Service (Lógica "Fat"). NUNCA criar Repository.
+    - [ ] **Banco de Dados:** Precisa de Migration? Mudanças no Model?
+    - [ ] **Tratamento de Erro:** Qual `BusinessException` será lançada?
+
+2.  **Validação de Regras:**
+    - O plano viola a regra "Sem Repository"?
+    - O plano usa `declare(strict_types=1)`?
+    - O plano propõe validação no Controller (Proibido)?
+
+**Aguarde a confirmação do usuário ("De acordo" ou "Aprovado") sobre o plano antes de prosseguir.**
+
+### 3. I - Implement (Implementação)
+Após aprovação do plano, gere o código seguindo estritamente a Skill `laravel-inertia-react-architecture`:
+
+1.  **Passo a Passo:**
+    - Crie/Ajuste Migrations e Models primeiro.
+    - Crie o `FormRequest` com mensagens traduzidas.
+    - Implemente a lógica no `Service` (com Transações e Logs).
+    - Implemente o `Controller` injetando o Service.
+    - Ajuste rotas e frontend (se aplicável).
+
+2.  **Padrões de Código (Strict):**
+    - Adicione `declare(strict_types=1);` em todos os arquivos PHP.
+    - Use `php artisan` para gerar arquivos quando possível.
+    - Garanta Type Hints explícitos em métodos e propriedades.
+
+3.  **Review Final:**
+    - O código segue o padrão `try-catch` com `ApiResponse` no Controller?
+    - Logs estão estruturados (com `trace_id`)?
+    - Rode `vendor/bin/pint` (simulado ou sugerido) para PSR-12.
+
+> **Nota Crítica:** Se o usuário colar um código ou pedir uma correção rápida ("hotfix"), você pode pular a criação do arquivo MD de spec, mas **ainda deve processar mentalmente o R-P-I** para garantir que a correção não viole a arquitetura (ex: não inserir lógica no controller só porque é rápido).
