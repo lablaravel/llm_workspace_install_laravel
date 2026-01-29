@@ -1,17 +1,19 @@
 ---
 description: Regra para atualização do log de projeto
-globs: 
-alwaysApply: true
+alwaysApply: false
 ---
-
 # Log de Projeto
 
-Sempre que uma alteração significativa for feita no projeto, atualize o arquivo `docs/log-project.md` com um resumo das mudanças.
+Sempre que uma alteração significativa for feita no projeto e commitada para uma branch, atualize o arquivo `docs/log-project.md` com um resumo das mudanças.
 
 ## Formato do Log
-
-```markdown
+arkdown
 ## [DATA] - Descrição breve
+
+**Tipo:** `feature` | `bugfix` | `hotfix` | `refactor` | `chore` | `docs`
+**Branch:** `nome-da-branch`
+**Task:** [UAG-XX](link-jira) _(opcional)_
+**PR:** [#123](link-pr) _(opcional)_
 
 ### Alterações
 - Item 1
@@ -20,4 +22,20 @@ Sempre que uma alteração significativa for feita no projeto, atualize o arquiv
 ### Arquivos afetados
 - `path/to/file1`
 - `path/to/file2`
+
+### Documentação relacionada _(opcional)_
+- [PRD-UAG-XX](link-confluence) | [Local](docs/prd/PRD-UAG-XX.md)
+- [BDD-UAG-XX](link-confluence) | [Local](docs/bdd/BDD-UAG-XX.md)
+
+### Comandos necessários _(se aplicável)_
+php artisan migrate
+php artisan db:seed
+npm install
+npm run build
 ```
+
+### ⚠️ Breaking Changes _(se houver)_
+- Descrição do breaking change e como migrar
+
+### Notas adicionais _(opcional)_
+- Informações relevantes para o time
