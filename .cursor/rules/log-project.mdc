@@ -1,13 +1,16 @@
 ---
-description: Regra para atualização do log de projeto
+description: Regra para atualização do log de projeto - aplicar após commits significativos
+globs: docs/log-project.md
 alwaysApply: false
 ---
 # Log de Projeto
 
 Sempre que uma alteração significativa for feita no projeto e commitada para uma branch, atualize o arquivo `docs/log-project.md` com um resumo das mudanças.
 
+**Quando aplicar:** Após fazer commit de alterações significativas em qualquer branch.
+
 ## Formato do Log
-arkdown
+
 ## [DATA] - Descrição breve
 
 **Tipo:** `feature` | `bugfix` | `hotfix` | `refactor` | `chore` | `docs`
