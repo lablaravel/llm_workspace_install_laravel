@@ -1,6 +1,6 @@
 ---
 name: react-patterns
-description: Modern React patterns and principles. Hooks, composition, performance, TypeScript best practices.
+description: Modern React patterns and principles. Hooks, composition, performance, TypeScript best practices. Inclui referência para tipagem de form handlers (FormEventHandler depreciado).
 allowed-tools: Read, Write, Edit, Glob, Grep
 ---
 
@@ -155,14 +155,23 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 | Interface | Component props |
 | Type | Unions, complex |
 | Generic | Reusable components |
+| **Readonly** | Sempre tipar props como `Readonly<Props>` — ver skill [react-readonly-props](.cursor/skills/react-readonly-props/SKILL.md) |
 
 ### Common Types
 
 | Need | Type |
 |------|------|
 | Children | ReactNode |
-| Event handler | MouseEventHandler |
+| Event handler (mouse, etc.) | MouseEventHandler |
+| **Form submit handler** | Ver [references/form-event-handlers.md](references/form-event-handlers.md) — **não usar** `FormEventHandler` (depreciado) |
 | Ref | RefObject<Element> |
+
+### Form event handlers (FormEventHandler deprecado)
+
+- **Não usar:** `FormEventHandler` nem `FormEvent` importados de `react` (depreciados; SonarQube/linters sinalizam).
+- **Usar:** Tipo mínimo no parâmetro: `(e: { preventDefault: () => void }) => { ... }` para submit que só chama `e.preventDefault()`.
+- **Se precisar do form:** `(e: { preventDefault: () => void; currentTarget: HTMLFormElement }) => { ... }`.
+- Referência completa: [references/form-event-handlers.md](references/form-event-handlers.md).
 
 ---
 
@@ -192,6 +201,15 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 | useEffect for everything | Server components |
 | Premature optimization | Profile first |
 | Index as key | Stable unique ID |
+
+---
+
+## Referências
+
+| Tópico | Arquivo |
+|--------|---------|
+| Tipagem de handlers de formulário (FormEventHandler depreciado) | [references/form-event-handlers.md](references/form-event-handlers.md) |
+| Props read-only (lint "Mark the props as read-only") | Skill [react-readonly-props](../react-readonly-props/SKILL.md) |
 
 ---
 

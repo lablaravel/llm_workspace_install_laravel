@@ -32,10 +32,10 @@ Closes [UAG-XX](https://site.atlassian.net/browse/UAG-XX)
 
 | Tipo | Arquivo Local | Confluence |
 |------|---------------|------------|
-| PRD | [`docs/prd/PRD-UAG-XX.md`](github-link) | [Ver PRD](confluence-link) |
-| BDD | [`docs/bdd/BDD-UAG-XX.md`](github-link) | [Ver BDD](confluence-link) |
-| TDD | [`docs/tdd/TDD-UAG-XX.md`](github-link) | [Ver TDD](confluence-link) |
-| ADR | [`docs/adr/ADR-XXX.md`](github-link) | [Ver ADR](confluence-link) |
+| PRD | [`.cursor/docs/prd/PRD-{TASK_ID}.md`](github-link) | [Ver PRD](confluence-link) |
+| RFC | [`.cursor/docs/rfc/RFC-{TASK_ID}-titulo-kebab.md`](github-link) | [Ver RFC](confluence-link) |
+| TDD | [`.cursor/docs/tdd/TDD-{TASK_ID}.md`](github-link) | [Ver TDD](confluence-link) |
+| ADR | [`.cursor/docs/adr/ADR-NNN-titulo-kebab.md`](github-link) | [Ver ADR](confluence-link) |
 
 ## Mudanças Principais
 - [ ] Mudança 1
@@ -45,7 +45,7 @@ Closes [UAG-XX](https://site.atlassian.net/browse/UAG-XX)
 ## ✅ Checklist de Qualidade
 - [ ] Código segue arquitetura definida na spec
 - [ ] Testes implementados conforme TDD (se aplicável)
-- [ ] Cenários BDD cobertos (se aplicável)
+- [ ] Cenários BDD da task do Jira cobertos (se aplicável)
 - [ ] `declare(strict_types=1)` em todos os arquivos PHP
 - [ ] Sem lógica de negócio no Controller
 - [ ] Documentação atualizada
@@ -87,6 +87,93 @@ Tipos:
 - hotfix: Correção urgente
 - chore: Manutenção/refactoring
 ```
+
+### Integração Automática com Jira
+
+**⚠️ PRÉ-REQUISITO:** Para vincular branch a task, é necessário que o usuário tenha escolhido a **Opção A (Conectar com Jira/Confluence)** e então passar pelo **Connection Gate** (ver `workflow.mdc`).
+
+**Detecção Automática de TASK_ID:**
+
+Ao criar branch vinculada, extrair TASK_ID do nome usando regex:
+```
+Padrão: {tipo}/{TASK_ID}-{descricao}
+Regex: /^(feature|bugfix|hotfix|chore)\/([A-Z]+-\d+)-/
+Grupo capturado: $2 (ex: UAG-45)
+```
+
+**Atualização Automática de Status ao Criar Branch:**
+
+Após criar branch vinculada:
+
+1. Extrair TASK_ID do nome da branch
+2. Obter task do Jira usando `user-atlassian-getJiraIssue`
+3. Verificar status atual da task:
+   - Se status for inicial ("To Do", "Backlog", "Open", etc.):
+     - Transicionar para "In Progress" usando `user-atlassian-transitionJiraIssue`
+     - Verificar status disponíveis antes de transicionar
+   - Se status já for "In Progress" ou posterior:
+     - Não transicionar (manter status atual)
+4. Adicionar comentário na task usando `user-atlassian-addCommentToJiraIssue`:
+   ```
+   🌿 **Branch criada:**
+   - **Nome:** `{nome-da-branch}`
+   - **Base:** `{base-branch}`
+   - **Repositório:** [owner/repo](github-url)
+   
+   ---
+   *Criada em YYYY-MM-DD HH:MM*
+   ```
+
+**Tratamento de Erros:**
+
+- Se falhar ao obter task: Continuar criação da branch e informar usuário
+- Se falhar ao transicionar status: Adicionar comentário informando falha (se possível) e continuar
+- Se status não disponível: Verificar status disponíveis via API e usar equivalente mais próximo
+- Se conexão com Jira indisponível: Continuar criação da branch e informar usuário sobre falha na integração
+
+**Transição de Status ao Criar PR:**
+
+Ao criar Pull Request vinculado a uma task:
+
+1. Extrair TASK_ID de:
+   - Título do PR: `[UAG-XX]` → Regex: `/\[([A-Z]+-\d+)\]/`
+   - Corpo do PR: `Closes UAG-XX` → Regex: `/Closes\s+([A-Z]+-\d+)/i`
+   - Nome da branch origem: `feature/UAG-XX-descricao` → Regex: `/^(feature|bugfix|hotfix|chore)\/([A-Z]+-\d+)-/`
+
+2. Obter task do Jira usando `user-atlassian-getJiraIssue`
+
+3. Verificar status atual:
+   - Se status for "In Progress":
+     - Transicionar para "Code Review" ou "Review" (verificar status disponíveis)
+   - Se status já for "Code Review" ou posterior:
+     - Manter status (não transicionar)
+
+4. Adicionar comentário na task com link do PR:
+   ```
+   🔀 **Pull Request criado:**
+   
+   | Campo | Valor |
+   |-------|-------|
+   | **PR** | [#123 - Título](pr-url) |
+   | **Status** | Open |
+   | **Branch** | `{branch-origem}` → `{branch-destino}` |
+   
+   ---
+   *Criado em YYYY-MM-DD HH:MM*
+   ```
+
+**Transição de Status ao Fechar Branch (Merge):**
+
+Ao fechar/mergear branch vinculada:
+
+1. Extrair TASK_ID do nome da branch
+2. Obter task do Jira
+3. Verificar se PR foi mergeado:
+   - Se PR foi mergeado:
+     - Transicionar para "Done" ou "Concluído" usando `user-atlassian-transitionJiraIssue`
+     - Adicionar comentário final na task
+   - Se branch foi deletada sem merge:
+     - Não transicionar para "Done" (manter status atual)
 
 ### Criar Pull Request Completo
 
@@ -228,10 +315,10 @@ Output:
 Input:
   Task: UAG-45
   Branch: feature/UAG-45-login-social-portal-cativo
-  PRD: docs/prd/PRD-UAG-45.md
-  BDD: docs/bdd/BDD-UAG-45.md
+  PRD: .cursor/docs/UAG-45/PRD-UAG-45.md
+  TDD: .cursor/docs/UAG-45/TDD-UAG-45.md
   Confluence PRD: https://site.atlassian.net/wiki/.../PRD-UAG-45
-  Confluence BDD: https://site.atlassian.net/wiki/.../BDD-UAG-45
+  Confluence TDD: https://site.atlassian.net/wiki/.../TDD-UAG-45
 
 Output:
   PR #123: [UAG-45] Login Social no Portal Cativo

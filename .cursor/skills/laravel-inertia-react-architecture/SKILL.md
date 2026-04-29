@@ -20,6 +20,12 @@ keywords:
 
 Decisões arquiteturais obrigatórias para projetos Laravel 11+ com Inertia.js e React/TypeScript.
 
+## Interligação (ficheiros — sem espelhar conteúdo)
+
+- **Este skill (canónico):** `.cursor/skills/laravel-inertia-react-architecture/SKILL.md`
+- **Segurança / hardening / auditoria:** abrir ou citar `.cursor/skills/security-best-practices/SKILL.md` e, conforme a camada, os ficheiros em `.cursor/skills/security-best-practices/references/`
+- **Ferramentas que só leem `.agents/skills/`:** ver `.agents/skills/README.md` — a maior parte das skills **não** está em `.agents`; use sempre o caminho em `.cursor/skills/` quando precisar de indicar o ficheiro.
+
 ## Princípios Fundamentais
 
 1. **Service Layer (Fat Services)**: Toda lógica de negócio deve estar em Services, nunca em Controllers
@@ -49,6 +55,12 @@ Decisões arquiteturais obrigatórias para projetos Laravel 11+ com Inertia.js e
 | Object Calisthenics | [object-calisthenics.md](references/object-calisthenics.md) |
 | Error Handling Full Stack | [error-handling-fullstack.md](references/error-handling-fullstack.md) |
 | Checklists Rápidos | [checklists.md](references/checklists.md) |
+| Hardening / segurança explícita (OWASP, XSS, CSRF, CSP, auditoria) | Ativar skill [`security-best-practices`](../security-best-practices/SKILL.md) e ler `references/` dessa skill conforme a camada (backend / React / JS geral) |
+
+## Segurança e hardening
+
+- Para **revisão de segurança**, **relatório de vulnerabilidades**, **secure-by-default** ou **auditoria** (não só legibilidade de código), **abrir o ficheiro** `.cursor/skills/security-best-practices/SKILL.md` (e as `references/` dessa pasta). Ali estão MUST/SHOULD e normas por camada (PHP/Laravel/Inertia server, React/TS, JS no browser).
+- A arquitetura deste documento (Services, Form Requests, Inertia) **complementa** essa skill; não a substitui.
 
 ## Checklist Rápido (Antes de Codificar)
 

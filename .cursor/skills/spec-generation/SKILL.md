@@ -1,6 +1,6 @@
 ---
 name: spec-generation
-description: Geração de documentação de especificação (PRD, BDD, TDD, ADR) com sincronização automática para Confluence. Use quando precisar criar Product Requirements Documents, Behavior-Driven Development specs, Test-Driven Development specs, ou Architecture Decision Records. Automaticamente sincroniza com Confluence e vincula à task Jira.
+description: Geração de documentação de especificação (PRD, TDD, ADR, RFC) com sincronização automática para Confluence. Use quando precisar criar Product Requirements Documents, Test-Driven Development specs, Architecture Decision Records ou Request for Comments. Automaticamente sincroniza com Confluence e vincula à task Jira.
 allowed-tools: Read, Write, Glob, user-atlassian-createConfluencePage, user-atlassian-updateConfluencePage, user-atlassian-searchConfluenceUsingCql, user-atlassian-getConfluenceSpaces, user-atlassian-getConfluencePage, user-atlassian-editJiraIssue, user-atlassian-addCommentToJiraIssue
 ---
 
@@ -12,9 +12,11 @@ allowed-tools: Read, Write, Glob, user-atlassian-createConfluencePage, user-atla
 
 Use este skill na fase **P - Plan** do workflow R-P-I para criar:
 - **PRD**: Product Requirements Document (features complexas)
-- **BDD**: Behavior-Driven Development specs (features com interação)
+- **RFC**: Request for Comments (proposta **antes** da decisão; alinhamento e opções)
 - **TDD**: Test-Driven Development specs (lógica complexa/crítica)
-- **ADR**: Architecture Decision Record (decisões arquiteturais)
+- **ADR**: Architecture Decision Record (decisões arquiteturais **já tomadas**)
+
+> **Nota:** BDD (Behavior-Driven Development) não é mais um documento separado. Os critérios de aceite em formato Gherkin ficam integrados na descrição da task do Jira através do template `.cursor/docs/jira/_TEMPLATE-JIRA-TASK.md`.
 
 ## Fluxo Completo de Criação
 
@@ -24,17 +26,22 @@ Use este skill na fase **P - Plan** do workflow R-P-I para criar:
 ┌─────────────────────────────────────────┐
 │ 1. CRIAR SPEC LOCAL                      │
 ├─────────────────────────────────────────┤
-│ • Gerar arquivo em docs/{tipo}/          │
-│ • Seguir template apropriado             │
+│ • Gerar arquivo na pasta do tipo:        │
+│   prd/, rfc/, tdd/, adr/, specs/, jira/  │
+│ • Nomenclatura: {TASK_ID} + título       │
+│ • Seguir template em .cursor/docs/{tipo}/│
 │ • Incluir metadata com task e links      │
 └─────────────────────────────────────────┘
               ↓
 ┌─────────────────────────────────────────┐
 │ 2. SINCRONIZAR COM CONFLUENCE            │
 ├─────────────────────────────────────────┤
-│ • Criar página no Confluence             │
+│ • Criar ou usar pasta da task no         │
+│   Confluence ({TASK_ID} - {Título})      │
+│ • Criar página como subpágina dessa pasta│
+│   (PRD, RFC, TDD, ADR e Spec —            │
+│   Refinamento NÃO vai para Confluence)    │
 │ • Registrar confluence_page_id no local  │
-│ • Adicionar link bidirecional            │
 └─────────────────────────────────────────┘
               ↓
 ┌─────────────────────────────────────────┐
@@ -61,18 +68,21 @@ Use este skill na fase **P - Plan** do workflow R-P-I para criar:
 - Mudanças que impactam múltiplos usuários
 - Funcionalidades que requerem planejamento detalhado
 
-**Localização local:** `docs/prd/PRD-{task-id}.md`
-**Localização Confluence:** `[Space]/PRD/PRD-{task-id} - {título}`
+**Localização local:** `.cursor/docs/prd/PRD-{TASK_ID}.md`
+**Localização Confluence:** Dentro da **pasta da task** `{TASK_ID} - {título}` (criar subpágina PRD).
 
-### BDD - Behavior-Driven Development
+### RFC - Request for Comments
 
 **Quando usar:**
-- Features com interação do usuário
-- Funcionalidades que requerem especificação de comportamento
-- Quando precisar de cenários de teste claros
+- Decisão ainda **não** fechada e precisa de opções, critérios e aprovadores explícitos
+- Impacto alto, múltiplos stakeholders, escolha de fornecedor/arquitetura em discussão
 
-**Localização local:** `docs/bdd/BDD-{task-id}.md`
-**Localização Confluence:** `[Space]/BDD/BDD-{task-id} - {título}`
+**Quando não usar:** direção já aprovada — use **ADR** (registro) e **TDD** (implementação).
+
+**Conteúdo (RACI, critérios antes das opções, status quo, Outcome):** skill **`create-rfc`**.
+
+**Localização local:** `.cursor/docs/rfc/RFC-{TASK_ID}-{titulo-kebab}.md`
+**Localização Confluence:** Dentro da **pasta da task** `{TASK_ID} - {título}` (criar subpágina **RFC**).
 
 ### TDD - Test-Driven Development
 
@@ -82,19 +92,30 @@ Use este skill na fase **P - Plan** do workflow R-P-I para criar:
 - Funcionalidades críticas
 - Quando alta cobertura de testes é necessária
 
-**Localização local:** `docs/tdd/TDD-{task-id}.md`
-**Localização Confluence:** `[Space]/TDD/TDD-{task-id} - {título}`
+**Localização local:** `.cursor/docs/tdd/TDD-{TASK_ID}.md` ou `{TASK_ID}-{titulo}.md`
+**Localização Confluence:** Dentro da **pasta da task** `{TASK_ID} - {título}` (criar subpágina TDD).
 
 ### ADR - Architecture Decision Record
 
 **Quando usar:**
-- Decisões arquiteturais importantes
-- Escolha de tecnologias/ferramentas
-- Mudanças estruturais significativas
-- Trade-offs importantes
+- Decisão arquitetural **já tomada** (o ADR registra o *porquê*, não a discussão em aberto)
+- Escolha de tecnologias, padrões estruturais ou trade-offs que afetam o sistema por anos
 
-**Localização local:** `docs/adr/ADR-{numero}-{titulo-kebab}.md`
-**Localização Confluence:** `[Space]/ADR/ADR-{numero} - {título}`
+**Quando não usar:** decisão ainda não fechada (tratar na task/PRD primeiro); plano de implementação detalhado (use **TDD** ou **Spec**).
+
+**Conteúdo e formato (MADR / Nygard / Y-Statement, checklist, imutabilidade):** seguir o skill **`create-adr`** — ADR deve ser enxuto (≈200–500 palavras); detalhes longos vão para TDD/Spec.
+
+**Localização local:** `.cursor/docs/adr/ADR-{NNN}-{titulo-kebab}.md` (`NNN` sequencial; ver `create-adr` para regra do próximo número)
+**Localização Confluence:** Dentro da **pasta da task** `{TASK_ID} - {título}` (criar subpágina ADR).
+
+### Spec (Spec Técnica)
+
+**Quando usar:** Toda task com spec técnica de implementação.
+
+**Localização local:** `.cursor/docs/specs/{TASK_ID}-{titulo-kebab}.md`
+**Localização Confluence:** Dentro da **pasta da task** `{TASK_ID} - {título}` (criar subpágina **Spec-{TASK_ID} - {Título}**).
+
+**Importante:** Refinamento (história, escopo, aceite) **não é publicado no Confluence** — fica apenas na task do Jira (descrição e comentários). No Confluence a pasta da task contém PRD, RFC (quando existir), TDD, ADR e Spec.
 
 ## Template com Metadata de Integração
 
@@ -126,9 +147,9 @@ status: draft | review | approved
 
 **Perguntas ao usuário:**
 - Esta feature requer PRD? (complexidade, impacto)
-- Esta feature requer BDD? (interação do usuário)
+- Há decisão em aberto com opções e aprovação? (RFC)
 - Esta feature requer TDD? (lógica complexa/crítica)
-- Houve decisão arquitetural? (ADR)
+- Houve decisão arquitetural já fechada? (ADR)
 
 ### Passo 2: Coletar Informações
 
@@ -144,16 +165,17 @@ status: draft | review | approved
 
 ### Passo 3: Gerar Documento Local
 
-1. Criar arquivo em `docs/{tipo}/`
-2. Preencher template com informações coletadas
-3. Adicionar metadata inicial (sem IDs do Confluence ainda)
+1. Criar arquivo na **pasta do tipo** (`.cursor/docs/prd/`, `rfc/`, `tdd/`, `adr/`, `specs/`, `jira/`) com nomenclatura `{TASK_ID}` + título
+2. Usar template em `.cursor/docs/{tipo}/_TEMPLATE.md`
+3. Preencher template com informações coletadas
+4. Adicionar metadata inicial (sem IDs do Confluence ainda)
 
 ### Passo 4: Sincronizar com Confluence
 
 **Ações automáticas:**
 1. Obter `cloudId` e `spaceId`
-2. Buscar página pai correta (PRD/BDD/TDD/ADR)
-3. Criar página no Confluence com conteúdo
+2. Criar ou localizar a **pasta da task** no Confluence (`{TASK_ID} - {Título da tarefa}`)
+3. Criar a página como **subpágina dentro dessa pasta** (não na raiz do space)
 4. Obter `pageId` e URL da página criada
 5. Atualizar metadata no arquivo local
 
@@ -170,7 +192,7 @@ Adicionar no final da descrição:
 **Opção B - Adicionar comentário:**
 ```
 📄 Spec criada: [PRD-UAG-45 - Login Social](confluence-url)
-Arquivo local: docs/prd/PRD-UAG-45.md
+Arquivo local: .cursor/docs/prd/PRD-UAG-45.md
 ```
 
 ### Passo 6: Revisar e Aprovar
@@ -197,19 +219,19 @@ Arquivo local: docs/prd/PRD-UAG-45.md
 
 | Tipo | Link Local | Confluence |
 |------|------------|------------|
-| PRD | [docs/prd/PRD-UAG-45.md](github-link) | [PRD-UAG-45](confluence-url) |
-| BDD | [docs/bdd/BDD-UAG-45.md](github-link) | [BDD-UAG-45](confluence-url) |
-| TDD | [docs/tdd/TDD-UAG-45.md](github-link) | [TDD-UAG-45](confluence-url) |
-| ADR | [docs/adr/ADR-001.md](github-link) | [ADR-001](confluence-url) |
+| PRD | [.cursor/docs/prd/PRD-UAG-45.md](github-link) | [PRD-UAG-45](confluence-url) |
+| RFC | [.cursor/docs/rfc/RFC-UAG-45-titulo-kebab.md](github-link) | [RFC](confluence-url) |
+| TDD | [.cursor/docs/tdd/TDD-UAG-45.md](github-link) | [TDD-UAG-45](confluence-url) |
+| ADR | [.cursor/docs/adr/ADR-001-titulo-kebab.md](github-link) | [ADR no Confluence](confluence-url) |
 ```
 
 ## Templates Completos
 
-Templates disponíveis em:
-- `docs/prd/_TEMPLATE.md`
-- `docs/bdd/_TEMPLATE.md`
-- `docs/tdd/_TEMPLATE.md`
-- `docs/adr/_TEMPLATE.md`
+Templates em `.cursor/docs/{tipo}/_TEMPLATE.md`. Arquivos finais vão na **pasta do tipo** (prd/, rfc/, tdd/, adr/, specs/, jira/) com nomenclatura `{TASK_ID}` + título:
+- `.cursor/docs/prd/_TEMPLATE.md`
+- `.cursor/docs/rfc/_TEMPLATE.md`
+- `.cursor/docs/tdd/_TEMPLATE.md`
+- `.cursor/docs/adr/_TEMPLATE.md`
 
 ## Consulta de Specs pelo LLM
 
@@ -239,15 +261,17 @@ type = page AND label = "spec" AND lastModified > now("-7d")
 | Comando | Ação |
 |---------|------|
 | "criar PRD para UAG-XX" | Gera PRD + Confluence + Jira |
-| "criar BDD para UAG-XX" | Gera BDD + Confluence + Jira |
 | "criar TDD para UAG-XX" | Gera TDD + Confluence + Jira |
-| "criar ADR" | Gera ADR + Confluence |
+| "criar RFC para UAG-XX" | Redige RFC (skill `create-rfc`) + sincroniza Confluence/Jira conforme fluxo acima |
+| "criar ADR" | Redige ADR (skill `create-adr`) + sincroniza Confluence/Jira conforme fluxo acima |
 | "atualizar spec" | Atualiza local + Confluence |
 | "consultar spec UAG-XX" | Busca e retorna spec |
 
 ## Referências
 
 - Workflow completo: Ver skill `task-workflow`
+- Redação de RFC (pré-decisão, RACI, critérios): Ver skill `create-rfc`
+- Redação de ADR (estrutura, formatos, anti-padrões): Ver skill `create-adr`
 - Integração Confluence: Ver skill `confluence-integration`
 - Integração Jira: Ver skill `jira-integration`
 - Integração GitHub: Ver skill `github-integration`
