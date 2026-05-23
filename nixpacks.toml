@@ -1,0 +1,44 @@
+# Nixpacks config para Laravel + Inertia + Vite (Easypanel)
+# Node 20: forçar major 20 para evitar nodejs_24 (inexistente no nixpkgs do build)
+# Nixpacks PHP provider gerencia nginx + php-fpm automaticamente via NIXPACKS_PHP_ROOT_DIR e NIXPACKS_PHP_FALLBACK_PATH.
+
+[env]
+NIXPACKS_NODE_VERSION = "20"
+# Laravel: root em public/ e fallback para index.php (Easypanel quickstart)
+NIXPACKS_PHP_ROOT_DIR = "/app/public"
+NIXPACKS_PHP_FALLBACK_PATH = "/index.php"
+
+[phases.setup]
+# Pin do nixpkgs: o archive padrão do Easypanel costuma ficar atrás do que o plano PHP/Node do Nixpacks espera.
+nixpkgsArchive = "e6f23dc08d3624daab7094b701aa3954923c6bbb"
+# Sem php84Extensions.redis: o build PECL no `nix-env -if` falha com frequência (rede/hash/build).
+# Redis em produção: use predis (já no composer) e REDIS_CLIENT=predis — ver .env.example.
+nixPkgs = ["..."]
+
+[phases.install]
+# Nixpacks roda composer install e npm install automaticamente
+
+[phases.build]
+# Nixpacks roda npm run build quando existe package.json
+# FORÇAR build explícito para garantir que o Vite gere os assets (fix: manifest.json não encontrado)
+# Se o build falhar: copie o log COMPLETO do Easypanel (últimas 100+ linhas)
+# Laravel: criar dirs de storage/bootstrap/cache, ajustar permissões e criar symlink de storage
+cmds = [
+  "npm run build",
+  "mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs storage/pail bootstrap/cache",
+  "chown -R nobody:nogroup storage bootstrap/cache",
+  "find storage bootstrap/cache -type d -exec chmod 2775 {} +",
+  "find storage bootstrap/cache -type f -exec chmod 0664 {} +",
+  "mkdir -p public && ln -sfn /app/storage/app/public public/storage"
+]
+
+# Telescope: dashboard em /telescope apenas no serviço web (APP_SERVICE=web), quando APP_ENV=local|staging e TELESCOPE_ENABLED=true.
+# Com APP_ENV=production o Telescope não arranca (por desenho). Tarefas agendadas: serviço scheduler-run (prod) ou scheduler-work (local/staging); entradas telescope_* se o .env do agendador tiver Telescope ativo.
+#
+# Staging/produção: use APP_SERVICE por serviço na plataforma:
+# - web: app completa (Nginx + PHP-FPM); com PULSE_ENABLED, também pulse:work + pulse:check em background; com NIGHTWATCH_ENABLED, também nightwatch:agent
+# - scheduler-run: agendamento em produção (APP_ENV=production; schedule:run em loop)
+# - scheduler-work: agendamento em local/staging (APP_ENV=local|staging; schedule:work)
+# - horizon-worker: worker Horizon sem dashboard HTTP (com NIGHTWATCH_ENABLED, também nightwatch:agent em background)
+[start]
+cmd = "sh /app/deploy/start-service.sh"

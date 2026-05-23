@@ -1,1114 +1,342 @@
 ---
 alwaysApply: false
 ---
-# Setup Laravel - Laravel 12.x
 
-## 🚀 Inicialização do Projeto
+# Setup Workspace Laravel 13 (Sail + Redis + Queue + Horizon + Pulse + Telescope + Mail + MinIO)
 
-### 1. Criar Projeto Laravel 12.x
+## Objetivo
+Provisionar um workspace Laravel 13 com Docker (Sail), Redis, filas, Horizon, Pulse, Telescope, Mailpit e MinIO.
+
+Este setup é **interativo** e pergunta durante a execução:
+- Qual ambiente aplicar (`local`, `staging`, `production`) com padrão `local` se vazio.
+- Se deseja habilitar **Husky** para hooks Git.
+
+## Stack padrão
+- Laravel 13
+- PostgreSQL
+- Redis
+- Queue (Redis)
+- Horizon
+- Pulse
+- Telescope
+- Mailpit (mail local)
+- MinIO (S3 local)
+
+## Pré-requisitos
 ```bash
-# Obter o nome da pasta raiz dinamicamente
-PROJECT_NAME=$(basename "$PWD")
-
-# Instalar Laravel via cURL com serviços pré-configurados usando o nome da pasta
-curl -s "https://laravel.build/$PROJECT_NAME?with=pgsql,redis,mailpit,minio&devcontainer" | bash
-
-# Mover arquivos da subpasta criada para a pasta raiz
-echo "📁 Movendo arquivos da subpasta para a pasta raiz..."
-if [ -d "$PROJECT_NAME" ]; then
-    # Copiar todos os arquivos da subpasta para a pasta atual (evita problemas de permissão)
-    cp -r "$PROJECT_NAME"/* . 2>/dev/null || true
-    cp -r "$PROJECT_NAME"/.* . 2>/dev/null || true
-    
-    # Tentar remover a subpasta (se falhar, continuar)
-    rm -rf "$PROJECT_NAME" 2>/dev/null || echo "⚠️  Não foi possível remover a subpasta (permissões), mas arquivos foram copiados"
-    
-    echo "✅ Arquivos copiados com sucesso para a pasta raiz"
-    echo "🗑️  Subpasta removida (ou tentativa realizada)"
-else
-    echo "⚠️  Subpasta não encontrada, arquivos podem já estar na pasta raiz"
-fi
-
-# Após a movimentação, os arquivos estarão diretamente na pasta raiz
-
-# O Laravel Sail já vem pré-configurado com Docker
-# Não é necessário instalar PHP, Composer ou Node.js localmente
-
-## 📋 Como funciona a detecção dinâmica:
-
-1. **Detecção automática**: O script detecta automaticamente o nome da pasta atual
-2. **Nome do projeto**: Usa o nome da pasta como nome do projeto Laravel
-3. **Instalação e movimentação**: 
-   - Laravel é instalado em uma subpasta temporária
-   - Todos os arquivos são movidos para a pasta raiz
-   - A subpasta temporária é removida
-4. **Flexibilidade**: Funciona em qualquer pasta, independente do nome
-5. **Exemplos**:
-   - Se estiver em `/home/user/crm-clinica` → Laravel movido para `/home/user/crm-clinica`
-   - Se estiver em `/home/user/my-app` → Laravel movido para `/home/user/my-app`
-   - Se estiver em `/home/user/loja-online` → Laravel movido para `/home/user/loja-online`
-
-### 1.1 Verificar Guidelines e Configurações
-```bash
-# Verificar se existe algum arquivo que comece com "guideline" na pasta .guidelines
-GUIDELINE_FILE=$(find .guidelines -name "guideline*" -type f | head -1)
-
-if [ -n "$GUIDELINE_FILE" ]; then
-    echo "✅ Arquivo guideline encontrado: $(basename "$GUIDELINE_FILE")"
-    echo "📋 Verificando configurações do projeto..."
-    
-    # Copiar arquivos de configuração para a aplicação Laravel
-    echo "📁 Copiando arquivos de configuração..."
-    
-    # Copiar pint.json para configuração do Laravel Pint
-    if [ -f ".guidelines/pint.json" ]; then
-        cp .guidelines/pint.json ./
-        echo "✅ pint.json copiado"
-    fi
-    
-    # Copiar phpstan.neon para configuração do Larastan
-    if [ -f ".guidelines/phpstan.neon" ]; then
-        cp .guidelines/phpstan.neon ./
-        echo "✅ phpstan.neon copiado"
-    fi
-    
-    # Copiar grumphp.yml para configuração do GrumPHP
-    if [ -f ".guidelines/grumphp.yml" ]; then
-        cp .guidelines/grumphp.yml ./
-        echo "✅ grumphp.yml copiado"
-    fi
-    
-    echo "🎯 Configurações do projeto aplicadas com sucesso!"
-else
-    echo "⚠️  Nenhum arquivo guideline encontrado em .guidelines/"
-    echo "📝 Criando configurações padrão..."
-fi
-```
-
-## 📋 O que acontece durante a instalação via cURL:
-
-1. **Download automático**: O script baixa e instala o Laravel Installer
-2. **Criação do projeto**: Cria um novo projeto Laravel com todas as dependências
-3. **Docker configurado**: Instala e configura o Laravel Sail com Docker
-4. **Serviços pré-configurados**: PostgreSQL, Redis, Mailpit e MinIO já configurados
-5. **DevContainer**: Arquivo `.devcontainer/devcontainer.json` criado automaticamente
-6. **Dependências instaladas**: Executa `composer install` automaticamente
-7. **Ambiente pronto**: Projeto pronto para desenvolvimento
-
-## ⚠️ Pré-requisitos para Ubuntu:
-- Docker instalado via terminal
-- Git instalado (opcional, mas recomendado)
-- **NÃO precisa de PHP, Composer ou Node.js instalados localmente**
-
-### Verificação de Pré-requisitos no Ubuntu:
-```bash
-# Verificar se Docker está instalado e rodando
 docker --version
-docker ps
-
-# Se Docker não estiver instalado, instalar:
-sudo apt update
-sudo apt install docker.io docker-compose
-sudo systemctl start docker
-sudo systemctl enable docker
-
-# Adicionar usuário ao grupo docker (evita usar sudo)
-sudo usermod -aG docker $USER
-# IMPORTANTE: Fazer logout e login novamente após este comando
-
-# Verificar se Git está instalado
+docker compose version
 git --version
-
-# Se Git não estiver instalado:
-sudo apt install git
 ```
 
-
-
-### 2. Configurar Laravel Sail
+Opcional para SSL local com Traefik:
 ```bash
-# O Sail já vem pré-configurado com todos os serviços necessários:
-# - PostgreSQL (banco principal)
-# - Redis (filas e cache)
-# - Mailpit (interceptar emails)
-# - MinIO (armazenamento de arquivos)
-# - Xdebug (debugging)
-
-# Iniciar todos os serviços
-./vendor/bin/sail up -d
-
-# Verificar se todos os serviços estão rodando
-./vendor/bin/sail ps
-
-# Comandos específicos para Ubuntu
-# Se houver problemas de permissão, usar:
-sudo ./vendor/bin/sail up -d
-
-# Verificar logs dos containers
-./vendor/bin/sail logs
+mkcert -help
 ```
 
-### 3. Configurar Banco de Dados
+Se o usuário não estiver no grupo docker (Linux):
 ```bash
-# Executar migrations iniciais
-./vendor/bin/sail artisan migrate
+sudo usermod -aG docker "$USER"
+# faça logout/login após este comando
 ```
 
-### 3.1 Configurar Assets Frontend (Node.js/Vite)
+## Setup interativo
+
+### 1. Script de bootstrap
+Crie e execute o script abaixo na raiz do projeto.
+
 ```bash
-# Instalar dependências do Node.js
-./vendor/bin/sail npm install
-
-# Executar build de desenvolvimento para verificar se está funcionando
-./vendor/bin/sail npm run dev
-
-# Verificar se os assets foram compilados corretamente
-# Os arquivos compilados ficam em public/build/
-ls -la public/build/
-
-# Para produção (quando necessário):
-# ./vendor/bin/sail npm run build
-```
-
-### 3.2 Verificação Inicial
-```bash
-# Verificar se o Sail está funcionando
-./vendor/bin/sail ps
-
-# Verificar se a aplicação está rodando
-# Acessar: http://localhost
-
-# Verificar logs se houver problemas
-./vendor/bin/sail logs
-```
-
-### 3.2 Configuração do DevContainer
-```bash
-# O DevContainer já vem configurado automaticamente
-# Arquivo criado: .devcontainer/devcontainer.json
-
-# Para usar o DevContainer no VS Code:
-# 1. Instalar extensão "Dev Containers"
-# 2. Abrir projeto no VS Code
-# 3. Pressionar Ctrl+Shift+P
-# 4. Selecionar "Dev Containers: Reopen in Container"
-
-# Para usar o DevContainer no Cursor:
-# 1. Instalar extensão "Dev Containers"
-# 2. Abrir projeto no Cursor
-# 3. Pressionar Ctrl+Shift+P
-# 4. Selecionar "Dev Containers: Reopen in Container"
-```
-
-### 4. Configuração do Xdebug para Diferentes IDEs
-
-#### 4.1 Configuração Base do Xdebug
-```bash
-# Configurar variáveis de ambiente para Xdebug
-SAIL_XDEBUG_MODE=develop,debug
-SAIL_XDEBUG_CONFIG="client_host=host.docker.internal"
-
-# Iniciar Sail com Xdebug
-./vendor/bin/sail up -d
-```
-
-#### 4.2 Configuração para VS Code
-```json
-// .vscode/launch.json
-{
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Listen for Xdebug",
-            "type": "php",
-            "request": "launch",
-            "port": 9003,
-            "pathMappings": {
-                "/var/www/html": "${workspaceFolder}"
-            },
-            "ignore": [
-                "**/vendor/**/*.php"
-            ],
-            "xdebugSettings": {
-                "max_children": 128,
-                "max_data": 1024,
-                "max_depth": 3
-            }
-        },
-        {
-            "name": "Launch currently open script",
-            "type": "php",
-            "request": "launch",
-            "program": "${file}",
-            "cwd": "${fileDirname}",
-            "port": 9003,
-            "pathMappings": {
-                "/var/www/html": "${workspaceFolder}"
-            }
-        }
-    ]
-}
-```
-
-#### 4.3 Configuração para Cursor
-```json
-// .cursor/launch.json
-{
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Listen for Xdebug",
-            "type": "php",
-            "request": "launch",
-            "port": 9003,
-            "pathMappings": {
-                "/var/www/html": "${workspaceFolder}"
-            },
-            "ignore": [
-                "**/vendor/**/*.php"
-            ]
-        }
-    ]
-}
-```
-
-#### 4.4 Configuração para PHPStorm
-```bash
-# 1. Configurar PHP Interpreter
-# File → Settings → PHP → CLI Interpreter
-# Adicionar novo interpreter:
-# Name: Laravel Sail
-# Path: ./vendor/bin/sail
-# PHP executable: php
-
-# 2. Configurar Servidor
-# File → Settings → PHP → Servers
-# Name: Laravel Sail
-# Host: localhost
-# Port: 80
-# Debugger: Xdebug
-# Use path mappings: ✓
-# Project files: /var/www/html
-# Absolute path on server: /var/www/html
-
-# 3. Configurar Xdebug
-# File → Settings → PHP → Debug → Xdebug
-# Debug port: 9003
-# Can accept external connections: ✓
-# Force break at first line: ✓
-
-# 4. Configurar Run/Debug Configurations
-# Run → Edit Configurations
-# Adicionar "PHP Web Page"
-# Server: Laravel Sail
-# Start URL: http://localhost
-# Browser: Default
-```
-
-#### 4.5 Scripts Úteis para Xdebug
-```bash
-# Iniciar com Xdebug ativado
-SAIL_XDEBUG_MODE=develop,debug ./vendor/bin/sail up -d
-
-# Verificar se Xdebug está funcionando
-./vendor/bin/sail exec laravel.test php -m | grep xdebug
-
-# Testar Xdebug com script simples
-./vendor/bin/sail exec laravel.test php -r "var_dump(xdebug_info());"
-
-# Parar e reiniciar com Xdebug
-./vendor/bin/sail down
-SAIL_XDEBUG_MODE=develop,debug ./vendor/bin/sail up -d
-```
-
-### 5. Configuração do Mailtrip
-```bash
-# Mailtrip já está incluído no Laravel Sail por padrão
-# Acessar dashboard: http://localhost:8025
-# SMTP: localhost:1025
-
-# Configurar variáveis de ambiente para email
-MAIL_MAILER=smtp
-MAIL_HOST=mailpit
-MAIL_PORT=1025
-MAIL_USERNAME=null
-MAIL_PASSWORD=null
-MAIL_ENCRYPTION=null
-MAIL_FROM_ADDRESS="hello@example.com"
-MAIL_FROM_NAME="${APP_NAME}"
-
-# Testar envio de email
-php artisan tinker
-Mail::raw('Teste do Mailtrip', function ($message) {
-    $message->to('test@example.com')->subject('Teste');
-});
-```
-
-### 6. Configuração do MinIO
-```bash
-# MinIO já está incluído no Laravel Sail
-# Console: http://localhost:8901
-# API: http://localhost:8900
-# Usuário: sail / Senha: password
-
-# Configurar variáveis de ambiente para MinIO
-MINIO_ROOT_USER=sail
-MINIO_ROOT_PASSWORD=password
-MINIO_ENDPOINT=http://localhost:8900
-MINIO_USE_SSL=false
-MINIO_BUCKET=laravel
-
-# Configurar filesystem no config/filesystems.php
-'minio' => [
-    'driver' => 's3',
-    'key' => env('MINIO_ROOT_USER'),
-    'secret' => env('MINIO_ROOT_PASSWORD'),
-    'region' => 'us-east-1',
-    'bucket' => env('MINIO_BUCKET'),
-    'url' => env('MINIO_ENDPOINT'),
-    'endpoint' => env('MINIO_ENDPOINT'),
-    'use_path_style_endpoint' => true,
-],
-
-# Testar upload para MinIO
-php artisan tinker
-Storage::disk('minio')->put('test.txt', 'Hello MinIO!');
-```
-
-## 🛠️ Ferramentas de Qualidade de Código
-
-### 1. Laravel Pint (Formatação)
-```bash
-# Instalar Pint
-composer require laravel/pint --dev
-
-# Configurar .pint.json
-{
-    "preset": "laravel",
-    "rules": {
-        "simplified_null_return": true,
-        "blank_line_before_statement": {
-            "statements": ["return"]
-        }
-    }
-}
-```
-
-### 2. PHPStan (Análise Estática)
-```bash
-# Instalar PHPStan
-composer require larastan/larastan --dev
-
-# Configurar phpstan.neon
-parameters:
-    paths:
-        - app
-        - config
-        - database
-        - routes
-    level: 8
-    ignoreErrors:
-        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder::#'
-```
-
-### 3. PestPHP (Testes) - ✅ Framework de Testes Moderno
-```bash
-# Instalar PestPHP com versão compatível
-./vendor/bin/sail composer require pestphp/pest --dev
-./vendor/bin/sail composer require pestphp/pest-plugin-laravel --dev
-
-# Configurar Pest.php
-echo '<?php
-
-use Pest\Laravel\TestCase;
-
-uses(TestCase::class)->in("Feature", "Unit");' > tests/Pest.php
-
-# Executar testes com Pest
-./vendor/bin/sail artisan test
-
-# Executar testes específicos
-./vendor/bin/sail artisan test --filter=ExampleTest
-
-# Executar testes com coverage
-./vendor/bin/sail artisan test --coverage
-```
-
-### 3.1 Configuração Avançada do PestPHP
-```bash
-# Configurar phpunit.xml para Pest
-cat > phpunit.xml << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
-         colors="true"
->
-    <testsuites>
-        <testsuite name="Unit">
-            <directory suffix="Test.php">./tests/Unit</directory>
-        </testsuite>
-        <testsuite name="Feature">
-            <directory suffix="Test.php">./tests/Feature</directory>
-        </testsuite>
-    </testsuites>
-    <source>
-        <include>
-            <directory suffix=".php">./app</directory>
-        </include>
-    </source>
-    <php>
-        <env name="APP_ENV" value="testing"/>
-        <env name="BCRYPT_ROUNDS" value="4"/>
-        <env name="CACHE_DRIVER" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
-        <env name="MAIL_MAILER" value="array"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="SESSION_DRIVER" value="array"/>
-        <env name="TELESCOPE_ENABLED" value="false"/>
-    </php>
-</phpunit>
-EOF
-
-# Criar exemplo de teste Pest
-mkdir -p tests/Feature tests/Unit
-
-# Exemplo de teste Feature
-cat > tests/Feature/ExampleTest.php << 'EOF'
-<?php
-
-it('returns a successful response', function () {
-    $response = $this->get('/');
-    $response->assertStatus(200);
-});
-EOF
-
-# Exemplo de teste Unit
-cat > tests/Unit/ExampleTest.php << 'EOF'
-<?php
-
-it('asserts that true is true', function () {
-    expect(true)->toBeTrue();
-});
-EOF
-```
-
-### 4. GrumPHP (Git Hooks)
-```bash
-# Instalar GrumPHP
-composer require phpro/grumphp --dev
-
-# Configurar grumphp.yml
-grumphp:
-    tasks:
-        pint:
-            task: 'pint'
-        phpstan:
-            task: 'phpstan'
-        pest:
-            task: 'pest'
-```
-
-### 3. Configurar Filas
-```bash
-# Configurar Redis para filas
-php artisan queue:table
-php artisan migrate
-
-# Instalar Horizon para monitoramento
-composer require laravel/horizon
-php artisan horizon:install
-```
-
-## 🔧 Configurações Específicas
-
-### 1. Variáveis de Ambiente
-```env
-# Database
-DB_CONNECTION=pgsql
-DB_HOST=pgsql
-DB_PORT=5432
-DB_DATABASE=laravel
-DB_USERNAME=sail
-DB_PASSWORD=password
-
-# Redis
-REDIS_HOST=redis
-REDIS_PASSWORD=null
-REDIS_PORT=6379
-
-# Queue
-QUEUE_CONNECTION=redis
-
-# Xdebug
-SAIL_XDEBUG_MODE=develop,debug
-SAIL_XDEBUG_CONFIG="client_host=host.docker.internal"
-
-# Mailtrip
-MAIL_MAILER=smtp
-MAIL_HOST=mailpit
-MAIL_PORT=1025
-MAIL_USERNAME=null
-MAIL_PASSWORD=null
-MAIL_ENCRYPTION=null
-MAIL_FROM_ADDRESS="hello@example.com"
-MAIL_FROM_NAME="${APP_NAME}"
-
-# MinIO
-MINIO_ROOT_USER=sail
-MINIO_ROOT_PASSWORD=password
-MINIO_ENDPOINT=http://localhost:8900
-MINIO_USE_SSL=false
-MINIO_BUCKET=laravel
-```
-
-
-## 📊 Monitoramento e Observabilidade
-
-### 1. Laravel Telescope (Desenvolvimento)
-```bash
-# Instalar Telescope
-composer require laravel/telescope --dev
-php artisan telescope:install
-php artisan migrate
-```
-
-### 2. Laravel Pulse (Produção)
-```bash
-# Instalar Pulse
-composer require laravel/pulse
-php artisan pulse:install
-php artisan migrate
-```
-
-## 🧪 Configuração de Testes
-
-### 1. Banco de Dados de Teste
-```php
-// phpunit.xml
-<php>
-    <env name="DB_CONNECTION" value="sqlite"/>
-    <env name="DB_DATABASE" value=":memory:"/>
-    <env name="QUEUE_CONNECTION" value="sync"/>
-</php>
-```
-
-## 🚀 Scripts de Automação
-
-### 1. Script de Setup Completo para Ubuntu
-```bash
-#!/bin/bash
-# setup-ubuntu.sh
-
-echo "🚀 Instalando Laravel via cURL com serviços pré-configurados..."
-
-# Verificar se Docker está instalado
-if ! command -v docker &> /dev/null; then
-    echo "❌ Docker não encontrado. Instalando Docker..."
-    sudo apt update
-    sudo apt install docker.io docker-compose
-    sudo systemctl start docker
-    sudo systemctl enable docker
-    sudo usermod -aG docker $USER
-    echo "⚠️  IMPORTANTE: Faça logout e login novamente para aplicar as permissões do Docker"
-    exit 1
+cat > setup-workspace.sh <<'BASH'
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT_NAME="$(basename "$PWD")"
+
+read -r -p "Ambiente [local/staging/production] (default: local): " TARGET_ENV
+TARGET_ENV="${TARGET_ENV:-local}"
+case "$TARGET_ENV" in
+  local|staging|production) ;;
+  *)
+    echo "Ambiente inválido. Usando local."
+    TARGET_ENV="local"
+    ;;
+esac
+
+read -r -p "Deseja habilitar Husky para hooks Git? [y/N]: " HUSKY_INPUT
+HUSKY_INPUT="${HUSKY_INPUT:-N}"
+HUSKY_INPUT="$(echo "$HUSKY_INPUT" | tr '[:upper:]' '[:lower:]')"
+USE_HUSKY=false
+if [[ "$HUSKY_INPUT" == "y" || "$HUSKY_INPUT" == "yes" || "$HUSKY_INPUT" == "s" || "$HUSKY_INPUT" == "sim" ]]; then
+  USE_HUSKY=true
 fi
 
-# Verificar se usuário está no grupo docker
-if ! groups $USER | grep -q docker; then
-    echo "❌ Usuário não está no grupo docker. Adicionando..."
-    sudo usermod -aG docker $USER
-    echo "⚠️  IMPORTANTE: Faça logout e login novamente para aplicar as permissões do Docker"
-    exit 1
-fi
+echo "==> Instalando Laravel 13 com Sail e serviços (pgsql, redis, mailpit, minio)..."
+# Sem devcontainer
+curl -s "https://laravel.build/${PROJECT_NAME}?php=8.3&with=pgsql,redis,mailpit,minio" | bash
 
-# Obter o nome da pasta raiz dinamicamente
-PROJECT_NAME=$(basename "$PWD")
-
-# Instalar Laravel via cURL com todos os serviços usando o nome da pasta
-curl -s "https://laravel.build/$PROJECT_NAME?with=pgsql,redis,mailpit,minio&devcontainer" | bash
-
-# Mover arquivos da subpasta criada para a pasta raiz
-echo "📁 Movendo arquivos da subpasta para a pasta raiz..."
+echo "==> Movendo arquivos para a raiz do workspace..."
 if [ -d "$PROJECT_NAME" ]; then
-    # Copiar todos os arquivos da subpasta para a pasta atual (evita problemas de permissão)
-    cp -r "$PROJECT_NAME"/* . 2>/dev/null || true
-    cp -r "$PROJECT_NAME"/.* . 2>/dev/null || true
-    
-    # Tentar remover a subpasta (se falhar, continuar)
-    rm -rf "$PROJECT_NAME" 2>/dev/null || echo "⚠️  Não foi possível remover a subpasta (permissões), mas arquivos foram copiados"
-    
-    echo "✅ Arquivos copiados com sucesso para a pasta raiz"
-    echo "🗑️  Subpasta removida (ou tentativa realizada)"
-else
-    echo "⚠️  Subpasta não encontrada, arquivos podem já estar na pasta raiz"
+  shopt -s dotglob
+  cp -R "$PROJECT_NAME"/* . || true
+  shopt -u dotglob
+  rm -rf "$PROJECT_NAME" || true
 fi
 
-# Após a movimentação, os arquivos estarão diretamente na pasta raiz
+# Garantia extra para remover DevContainer caso tenha sido gerado por algum motivo
+rm -rf .devcontainer || true
 
-echo "🔧 Configurando ambiente..."
-
-# Verificar e copiar configurações do guideline
-echo "📋 Verificando arquivo guideline..."
-GUIDELINE_FILE=$(find .guidelines -name "guideline*" -type f | head -1)
-
-if [ -n "$GUIDELINE_FILE" ]; then
-    echo "✅ Arquivo guideline encontrado: $(basename "$GUIDELINE_FILE")"
-    echo "📁 Copiando arquivos de configuração..."
-    
-    # Copiar arquivos de configuração
-    if [ -f ".guidelines/pint.json" ]; then
-        cp .guidelines/pint.json ./
-        echo "✅ pint.json copiado"
-    fi
-    
-    if [ -f ".guidelines/phpstan.neon" ]; then
-        cp .guidelines/phpstan.neon ./
-        echo "✅ phpstan.neon copiado"
-    fi
-    
-    if [ -f ".guidelines/grumphp.yml" ]; then
-        cp .guidelines/grumphp.yml ./
-        echo "✅ grumphp.yml copiado"
-    fi
-    
-    echo "🎯 Configurações do projeto aplicadas!"
-else
-    echo "⚠️  Nenhum arquivo guideline encontrado, usando configurações padrão"
-fi
-
-# Dar permissão de execução ao Sail
+cp .env.example .env
 chmod +x vendor/bin/sail
 
-# Iniciar serviços
+echo "==> Subindo containers..."
 ./vendor/bin/sail up -d
 
-# Configurar ambiente
-cp .env.example .env
 ./vendor/bin/sail artisan key:generate
 
-# Executar migrations
+# Ajustes de ambiente
+APP_DEBUG=false
+TELESCOPE_ENABLED=false
+if [ "$TARGET_ENV" = "local" ]; then
+  APP_DEBUG=true
+  TELESCOPE_ENABLED=true
+fi
+
+set_env() {
+  local key="$1"
+  local value="$2"
+  if grep -q "^${key}=" .env; then
+    sed -i "s#^${key}=.*#${key}=${value}#" .env
+  else
+    echo "${key}=${value}" >> .env
+  fi
+}
+
+set_env APP_ENV "$TARGET_ENV"
+set_env APP_DEBUG "$APP_DEBUG"
+set_env LOG_CHANNEL stack
+set_env LOG_LEVEL debug
+set_env DB_CONNECTION pgsql
+set_env DB_HOST pgsql
+set_env DB_PORT 5432
+set_env DB_DATABASE laravel
+set_env DB_USERNAME sail
+set_env DB_PASSWORD password
+set_env QUEUE_CONNECTION redis
+set_env CACHE_STORE redis
+set_env REDIS_HOST redis
+set_env REDIS_PORT 6379
+set_env MAIL_MAILER smtp
+set_env MAIL_HOST mailpit
+set_env MAIL_PORT 1025
+set_env MAIL_USERNAME null
+set_env MAIL_PASSWORD null
+set_env MAIL_ENCRYPTION null
+set_env AWS_ACCESS_KEY_ID sail
+set_env AWS_SECRET_ACCESS_KEY password
+set_env AWS_DEFAULT_REGION us-east-1
+set_env AWS_BUCKET laravel
+set_env AWS_ENDPOINT http://minio:9000
+set_env AWS_USE_PATH_STYLE_ENDPOINT true
+set_env FILESYSTEM_DISK s3
+set_env TELESCOPE_ENABLED "$TELESCOPE_ENABLED"
+
+# Banco e filas
+./vendor/bin/sail artisan migrate
+./vendor/bin/sail artisan queue:failed-table || true
 ./vendor/bin/sail artisan migrate
 
-# Instalar ferramentas de qualidade
-./vendor/bin/sail composer require laravel/pint --dev
-./vendor/bin/sail composer require larastan/larastan --dev
-./vendor/bin/sail composer require pestphp/pest --dev
-./vendor/bin/sail composer require pestphp/pest-plugin-laravel --dev
+# Horizon
+./vendor/bin/sail composer require laravel/horizon
+./vendor/bin/sail artisan horizon:install
 
-# Configurar PestPHP
-echo '<?php
+# Pulse
+./vendor/bin/sail composer require laravel/pulse
+./vendor/bin/sail artisan pulse:install
 
-use Pest\Laravel\TestCase;
-
-uses(TestCase::class)->in("Feature", "Unit");' > tests/Pest.php
-
-# Configurar Git hooks
-./vendor/bin/sail exec laravel.test ./vendor/bin/grumphp git:init
-
-# Verificar se as configurações foram aplicadas corretamente
-echo "🔍 Verificando configurações aplicadas..."
-if [ -f "pint.json" ]; then
-    echo "✅ Laravel Pint configurado"
+# Telescope (somente dev por padrão)
+if [ "$TARGET_ENV" = "local" ]; then
+  ./vendor/bin/sail composer require laravel/telescope --dev
+  ./vendor/bin/sail artisan telescope:install
+  ./vendor/bin/sail artisan migrate
 fi
 
-if [ -f "phpstan.neon" ]; then
-    echo "✅ Larastan configurado"
-fi
+# Dependências frontend
+./vendor/bin/sail npm install
 
-if [ -f "grumphp.yml" ]; then
-    echo "✅ GrumPHP configurado"
-fi
+# Husky opcional
+if [ "$USE_HUSKY" = true ]; then
+  echo "==> Configurando Husky..."
+  ./vendor/bin/sail npm install --save-dev husky
+  ./vendor/bin/sail npm pkg set scripts.prepare="husky"
+  ./vendor/bin/sail npm run prepare
 
-if [ -f "tests/Pest.php" ]; then
-    echo "✅ PestPHP configurado"
-fi
+  mkdir -p .husky
+  cat > .husky/pre-commit <<'HOOK'
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
 
-echo "✅ Setup concluído!"
-echo "🌐 Acesse: http://localhost"
-echo "📧 Mailpit: http://localhost:8025"
-echo "🗄️ MinIO Console: http://localhost:8901"
-echo "🔍 Telescope: http://localhost/telescope"
-```
-
-### 2. Script de Desenvolvimento para Ubuntu
-```bash
-#!/bin/bash
-# dev-ubuntu.sh
-
-# Verificar se Docker está rodando
-if ! docker ps &> /dev/null; then
-    echo "❌ Docker não está rodando. Iniciando..."
-    sudo systemctl start docker
-fi
-
-# Iniciar Sail
-./vendor/bin/sail up -d
-
-# Verificar se todos os serviços estão rodando
-./vendor/bin/sail ps
-
-# Executar testes com PestPHP
-./vendor/bin/sail artisan test
-./vendor/bin/sail artisan test --coverage
-./vendor/bin/sail artisan test --filter=ExampleTest
-
-# Executar análise estática
 ./vendor/bin/sail exec laravel.test ./vendor/bin/pint
-./vendor/bin/sail exec laravel.test ./vendor/bin/phpstan analyse
+./vendor/bin/sail artisan test --compact
+HOOK
+  chmod +x .husky/pre-commit
+fi
 
-echo "🔍 Qualidade de código verificada!"
-echo "🌐 Acesse: http://localhost"
-echo "📧 Mailpit: http://localhost:8025"
-echo "🗄️ MinIO Console: http://localhost:8901"
+echo
+echo "✅ Setup concluído"
+echo "Ambiente: $TARGET_ENV"
+echo "Husky: $USE_HUSKY"
+echo "App: http://localhost"
+echo "Mailpit: http://localhost:8025"
+echo "MinIO Console: http://localhost:8901"
+echo "Horizon: http://localhost/horizon"
+if [ "$TARGET_ENV" = "local" ]; then
+  echo "Telescope: http://localhost/telescope"
+fi
+echo "Pulse: http://localhost/pulse"
+BASH
+
+chmod +x setup-workspace.sh
+./setup-workspace.sh
 ```
 
-### 3. Scripts de Desenvolvimento com Xdebug
+## Configuração de filas e monitoramento
+
+### Queue + Horizon
 ```bash
-#!/bin/bash
-# dev-debug.sh
-
-# Iniciar Sail com Xdebug
-SAIL_XDEBUG_MODE=develop,debug ./vendor/bin/sail up -d
-
-# Verificar status dos serviços
-./vendor/bin/sail ps
-
-# Verificar Xdebug
-./vendor/bin/sail exec laravel.test php -m | grep xdebug
-
-echo "🚀 Ambiente de desenvolvimento com Xdebug ativo!"
-echo "📧 Mailtrip: http://localhost:8025"
-echo "🗄️ MinIO Console: http://localhost:8901"
-echo "🔍 Telescope: http://localhost/telescope"
-```
-
-### 4. Comandos Úteis para Desenvolvimento
-```bash
-# Iniciar todos os serviços
-./vendor/bin/sail up -d
-
-# Iniciar com Xdebug
-SAIL_XDEBUG_MODE=develop,debug ./vendor/bin/sail up -d
-
-# Ver logs em tempo real
-./vendor/bin/sail logs -f
-
-# Acessar container Laravel
-./vendor/bin/sail shell
-
-# Executar comandos Artisan
-./vendor/bin/sail artisan migrate
 ./vendor/bin/sail artisan queue:work
+./vendor/bin/sail artisan horizon
+```
 
-# Comandos de Frontend (Node.js/Vite)
-./vendor/bin/sail npm install
-./vendor/bin/sail npm run dev
-./vendor/bin/sail npm run build
+### Pulse
+```bash
+./vendor/bin/sail artisan pulse:check
+```
 
-# Testar email
-./vendor/bin/sail artisan tinker
-# Mail::raw('Teste', function($m) { $m->to('test@test.com')->subject('Teste'); });
+### Telescope (local)
+```bash
+./vendor/bin/sail artisan telescope:prune
+```
 
-# Testar MinIO
-./vendor/bin/sail artisan tinker
-# Storage::disk('minio')->put('test.txt', 'Hello!');
+## Setup Traefik + SSL local
 
-# Parar todos os serviços
+Use este bloco quando quiser HTTPS local com domínio amigável.
+
+### 1. Gerar certificados locais
+```bash
+mkdir -p docker/traefik/certs
+mkcert -install
+mkcert -cert-file docker/traefik/certs/local-cert.pem -key-file docker/traefik/certs/local-key.pem "app.localhost" "localhost" "127.0.0.1" "::1"
+```
+
+### 2. Criar configuração estática do Traefik
+```bash
+mkdir -p docker/traefik
+cat > docker/traefik/traefik.yml <<'YAML'
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+providers:
+  docker:
+    exposedByDefault: false
+  file:
+    filename: /etc/traefik/dynamic.yml
+
+api:
+  dashboard: true
+YAML
+```
+
+### 3. Criar configuração dinâmica (TLS)
+```bash
+cat > docker/traefik/dynamic.yml <<'YAML'
+tls:
+  certificates:
+    - certFile: /certs/local-cert.pem
+      keyFile: /certs/local-key.pem
+YAML
+```
+
+### 4. Overlay Docker Compose para Traefik
+```bash
+cat > compose.override.yaml <<'YAML'
+services:
+  traefik:
+    image: traefik:v3.1
+    command:
+      - --configFile=/etc/traefik/traefik.yml
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./docker/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./docker/traefik/certs:/certs:ro
+
+  laravel.test:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.laravel.rule=Host(`app.localhost`)
+      - traefik.http.routers.laravel.entrypoints=websecure
+      - traefik.http.routers.laravel.tls=true
+      - traefik.http.services.laravel.loadbalancer.server.port=80
+YAML
+```
+
+### 5. Subir stack com SSL local
+```bash
 ./vendor/bin/sail down
-
-# Rebuild containers
-./vendor/bin/sail build --no-cache
-```
-
-## 🔧 Troubleshooting
-
-### Problemas Comuns e Soluções
-
-#### 0. Problema de Permissões na Movimentação de Arquivos
-```bash
-# Se a pasta do projeto não for removida após a cópia (problema de permissões):
-# Opção 1: Remover manualmente (se necessário)
-sudo rm -rf crm-clinica
-
-# Opção 2: Ignorar a pasta (não afeta o funcionamento)
-# A pasta pode ficar lá, os arquivos já foram copiados para a raiz
-
-# Opção 3: Usar Docker para remover (se disponível)
-docker run --rm -v "$PWD":/workspace alpine:latest sh -c "rm -rf /workspace/crm-clinica"
-```
-
-#### 1. Erro de Permissão no Docker (Ubuntu)
-```bash
-# Dar permissão de execução ao Sail
-chmod +x vendor/bin/sail
-
-# Verificar se usuário está no grupo docker
-groups $USER
-
-# Se não estiver no grupo docker, adicionar:
-sudo usermod -aG docker $USER
-# IMPORTANTE: Fazer logout e login novamente
-
-# Se ainda houver problemas, usar sudo temporariamente
-sudo ./vendor/bin/sail up -d
-
-# Verificar permissões do Docker
-sudo chmod 666 /var/run/docker.sock
-```
-
-#### 2. Porta já em uso
-```bash
-# Verificar quais portas estão em uso
-netstat -tulpn | grep :80
-netstat -tulpn | grep :5432
-
-# Parar serviços que estão usando as portas
-sudo systemctl stop apache2  # Se Apache estiver rodando
-sudo systemctl stop nginx    # Se Nginx estiver rodando
-```
-
-#### 3. Docker não está rodando (Ubuntu)
-```bash
-# Verificar status do Docker
-sudo systemctl status docker
-
-# Iniciar Docker se não estiver rodando
-sudo systemctl start docker
-sudo systemctl enable docker
-
-# Verificar se Docker está funcionando
-docker --version
-docker ps
-
-# Se Docker não estiver instalado, instalar:
-sudo apt update
-sudo apt install docker.io docker-compose
-sudo systemctl start docker
-sudo systemctl enable docker
-
-# Adicionar usuário ao grupo docker
-sudo usermod -aG docker $USER
-# IMPORTANTE: Fazer logout e login novamente
-```
-
-#### 4. Problemas com Xdebug
-```bash
-# Verificar se Xdebug está instalado
-./vendor/bin/sail exec laravel.test php -m | grep xdebug
-
-# Se não estiver, reinstalar
-./vendor/bin/sail build --no-cache
-```
-
-#### 5. Reset completo do ambiente
-```bash
-# Parar todos os containers
-./vendor/bin/sail down
-
-# Remover volumes (CUIDADO: apaga dados)
-docker volume prune
-
-# Rebuild completo
-./vendor/bin/sail build --no-cache
 ./vendor/bin/sail up -d
 ```
 
-## 🐧 Comandos Específicos para Ubuntu
+Acessos:
+- App HTTPS: `https://app.localhost`
+- Traefik dashboard: `http://localhost:8080`
 
-### Comandos de Verificação
+## Remoção de DevContainer
+
+Este workflow **não usa DevContainer**.
+
+Se existir legado:
 ```bash
-# Verificar se Docker está funcionando
-sudo systemctl status docker
-docker --version
-docker ps
-
-# Verificar se usuário está no grupo docker
-groups $USER
-
-# Verificar permissões do Docker
-ls -la /var/run/docker.sock
+rm -rf .devcontainer
 ```
 
-### Comandos de Instalação
+## Comandos úteis
 ```bash
-# Instalar Docker no Ubuntu
-sudo apt update
-sudo apt install docker.io docker-compose
-sudo systemctl start docker
-sudo systemctl enable docker
-
-# Adicionar usuário ao grupo docker
-sudo usermod -aG docker $USER
-# IMPORTANTE: Fazer logout e login novamente
-
-# Verificar instalação
-docker --version
-docker ps
-```
-
-### Comandos de Desenvolvimento
-```bash
-# Iniciar ambiente de desenvolvimento
+# Subir ambiente
 ./vendor/bin/sail up -d
 
-# Verificar status dos serviços
-./vendor/bin/sail ps
-
-# Ver logs em tempo real
+# Logs
 ./vendor/bin/sail logs -f
 
-# Parar todos os serviços
-./vendor/bin/sail down
+# Migrações
+./vendor/bin/sail artisan migrate
 
-# Rebuild containers
-./vendor/bin/sail build --no-cache
-```
+# Filas
+./vendor/bin/sail artisan queue:work
+./vendor/bin/sail artisan horizon
 
-### Comandos de Verificação de Configurações
-```bash
-# Verificar se existe algum arquivo guideline
-echo "🔍 Verificando arquivos guideline disponíveis:"
-find .guidelines -name "guideline*" -type f
+# Testes
+./vendor/bin/sail artisan test --compact
 
-# Verificar se os arquivos de configuração foram copiados
-ls -la pint.json phpstan.neon grumphp.yml
-
-# Verificar configuração do Laravel Pint
-./vendor/bin/sail exec laravel.test ./vendor/bin/pint --test
-
-# Verificar configuração do Larastan
-./vendor/bin/sail exec laravel.test ./vendor/bin/phpstan analyse --no-progress
-
-# Verificar configuração do GrumPHP
-./vendor/bin/sail exec laravel.test ./vendor/bin/grumphp git:init
-
-# Testar todas as ferramentas de qualidade
+# Formatação
 ./vendor/bin/sail exec laravel.test ./vendor/bin/pint
-./vendor/bin/sail exec laravel.test ./vendor/bin/phpstan analyse
-./vendor/bin/sail artisan test
 ```
 
-### Comandos para Verificação Dinâmica de Guidelines
-```bash
-# Listar todos os arquivos guideline disponíveis
-find .guidelines -name "guideline*" -type f
-
-# Verificar qual arquivo guideline será usado
-GUIDELINE_FILE=$(find .guidelines -name "guideline*" -type f | head -1)
-if [ -n "$GUIDELINE_FILE" ]; then
-    echo "✅ Arquivo guideline ativo: $(basename "$GUIDELINE_FILE")"
-    echo "📄 Conteúdo do arquivo:"
-    head -5 "$GUIDELINE_FILE"
-else
-    echo "⚠️  Nenhum arquivo guideline encontrado"
-fi
-
-# Verificar se as configurações foram aplicadas corretamente
-echo "🔧 Verificando configurações aplicadas:"
-[ -f "pint.json" ] && echo "✅ Laravel Pint configurado" || echo "❌ Laravel Pint não configurado"
-[ -f "phpstan.neon" ] && echo "✅ Larastan configurado" || echo "❌ Larastan não configurado"
-[ -f "grumphp.yml" ] && echo "✅ GrumPHP configurado" || echo "❌ GrumPHP não configurado"
-```
-
-### Comandos para Verificação Dinâmica do Projeto
-```bash
-# Verificar o nome do projeto atual
-PROJECT_NAME=$(basename "$PWD")
-echo "📁 Nome do projeto atual: $PROJECT_NAME"
-
-# Verificar o caminho completo
-echo "📍 Caminho completo: $PWD"
-
-# Verificar se estamos dentro do projeto Laravel (arquivos na pasta atual)
-if [ -f "artisan" ]; then
-    echo "✅ Estamos dentro do projeto Laravel"
-    echo "📂 Conteúdo do diretório atual:"
-    ls -la
-    echo "🚀 Comandos disponíveis:"
-    ./vendor/bin/sail artisan list | head -10
-else
-    echo "⚠️  Não estamos dentro do projeto Laravel"
-    echo "💡 Execute o setup primeiro para instalar o Laravel na pasta atual"
-fi
-```
-
-### Comandos para Movimentação Manual de Arquivos
-```bash
-# Se precisar mover arquivos manualmente de uma subpasta para a pasta raiz
-PROJECT_NAME=$(basename "$PWD")
-
-if [ -d "$PROJECT_NAME" ]; then
-    echo "📁 Movendo arquivos de $PROJECT_NAME para a pasta raiz..."
-    
-    # Mover arquivos visíveis
-    mv "$PROJECT_NAME"/* . 2>/dev/null || true
-    
-    # Mover arquivos ocultos (incluindo .env, .git, etc.)
-    mv "$PROJECT_NAME"/.* . 2>/dev/null || true
-    
-    # Remover a subpasta vazia
-    rmdir "$PROJECT_NAME" 2>/dev/null || true
-    
-    echo "✅ Arquivos movidos com sucesso"
-else
-    echo "⚠️  Subpasta $PROJECT_NAME não encontrada"
-fi
-
-# Verificar se a movimentação foi bem-sucedida
-if [ -f "artisan" ]; then
-    echo "✅ Laravel encontrado na pasta raiz"
-    echo "📂 Estrutura do projeto:"
-    ls -la | head -10
-else
-    echo "❌ Laravel não encontrado na pasta raiz"
-fi
-```
-
-## 📋 Checklist de Implementação
-
-- [ ] ✅ Projeto Laravel 12.x instalado e movido para pasta raiz via cURL com serviços pré-configurados
-- [ ] ✅ Arquivo guideline dinâmico verificado e configurações aplicadas
-- [ ] ✅ Arquivos de configuração copiados (pint.json, phpstan.neon, grumphp.yml)
-- [ ] ✅ Laravel Sail configurado (PostgreSQL, Redis, Mailpit, MinIO)
-- [ ] ✅ DevContainer configurado automaticamente
-- [ ] ✅ Xdebug configurado para VS Code, Cursor e PHPStorm
-- [ ] ✅ Mailtrip configurado para interceptação de emails
-- [ ] ✅ MinIO configurado para armazenamento de arquivos
-- [ ] ✅ Ferramentas de qualidade instaladas (Pint, PHPStan, Pest)
-- [ ] ✅ Banco de dados configurado
-- [ ] ✅ Assets frontend configurados (Node.js/Vite)
-- [ ] ✅ Dependências npm instaladas
-- [ ] ✅ Build de desenvolvimento funcionando
-- [ ] ✅ Sistema de filas configurado (Redis + Horizon)
-- [ ] ✅ Monitoramento configurado (Telescope, Pulse)
-- [ ] ✅ Testes configurados (PestPHP + Factories)
-- [ ] ✅ Scripts de automação criados
-- [ ] ✅ Configurações de debugging funcionando
-
-
-### Comandos Corretos para Desenvolvimento:
-
-```bash
-# Formatar código
-./vendor/bin/sail exec laravel.test ./vendor/bin/pint
-
-# Análise estática
-./vendor/bin/sail exec laravel.test ./vendor/bin/phpstan analyse
-
-# Executar testes com PestPHP
-./vendor/bin/sail artisan test
-./vendor/bin/sail artisan test --coverage
-
-# Verificar Xdebug
-./vendor/bin/sail exec laravel.test php -m | grep xdebug
-
-# Verificar Assets Frontend
-./vendor/bin/sail npm install
-./vendor/bin/sail npm run dev
-```
-
----
-
-*Nota:** Este setup estabelece a base Laravel 12.x com ferramentas de qualidade e monitoramento. As correções aplicadas garantem que o processo flua normalmente sem problemas de permissão ou comandos incorretos.
+## Checklist
+- [ ] Laravel 13 instalado
+- [ ] Redis configurado
+- [ ] Queue com Redis configurada
+- [ ] Horizon instalado e acessível
+- [ ] Pulse instalado e acessível
+- [ ] Telescope instalado no ambiente local
+- [ ] Mailpit funcionando
+- [ ] MinIO funcionando
+- [ ] Setup pergunta ambiente e Husky
+- [ ] DevContainer removido
+- [ ] Traefik + SSL local documentado
